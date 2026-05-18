@@ -2329,3 +2329,169 @@ function renderHotspotsTab() {
     });
 }
 
+
+// ================================================================
+// CANLI KONUM PAYLASIMI
+// ================================================================
+let locationSharingEnabled = localStorage.getItem('shareLocation') === 'true';
+let liveUserMarkers = {};
+let lastLiveLocUpdate = 0;
+
+document.addEventListener('DOMContentLoaded', () => {
+    const cb = document.getElementById('pf-share-location');
+    if (cb) cb.checked = locationSharingEnabled;
+});
+
+window.toggleLocationSharing = function(enabled) {
+    locationSharingEnabled = enabled;
+    localStorage.setItem('shareLocation', enabled ? 'true' : 'false');
+    if (!enabled) {
+        const phone = localStorage.getItem('userPhone');
+        if (phone && database) database.ref('liveLocations/' + phone).remove();
+        Object.keys(liveUserMarkers).forEach(k => {
+            map.removeLayer(liveUserMarkers[k]);
+            delete liveUserMarkers[k];
+        });
+    }
+};
+
+function pushMyLocation() {
+    if (!locationSharingEnabled || !database || !userLocation) return;
+    const now = Date.now();
+    if (now - lastLiveLocUpdate < 15000) return;
+    lastLiveLocUpdate = now;
+    const phone = localStorage.getItem('userPhone');
+    if (!phone) return;
+    database.ref('liveLocations/' + phone).set({
+        lat: userLocation.lat, lng: userLocation.lng,
+        timestamp: now, phone: phone,
+        name: localStorage.getItem('userName') || ''
+    });
+}
+
+function listenLiveLocations() {
+    if (!database) return;
+    database.ref('liveLocations').on('value', snap => {
+        const data = snap.val() || {};
+        const myPhone = localStorage.getItem('userPhone') || '';
+        const isAdmin = localStorage.getItem('userRole') === 'admin';
+        const now = Date.now();
+        const TIMEOUT = 5 * 60 * 1000;
+        Object.keys(liveUserMarkers).forEach(k => {
+            if (!data[k]) { map.removeLayer(liveUserMarkers[k]); delete liveUserMarkers[k]; }
+        });
+        Object.keys(data).forEach(phone => {
+            if (phone === myPhone) return;
+            const loc = data[phone];
+            if (now - loc.timestamp > TIMEOUT) { database.ref('liveLocations/' + phone).remove(); return; }
+            if (!isAdmin && !locationSharingEnabled) return;
+            const displayName = loc.name || phone.slice(-4);
+            if (liveUserMarkers[phone]) {
+                liveUserMarkers[phone].setLatLng([loc.lat, loc.lng]);
+            } else {
+                const icon = L.divIcon({
+                    className: 'live-user-marker',
+                    html: '<div class="live-user-dot"><span class="live-user-label">' + sanitize(displayName) + '</span></div>',
+                    iconSize: [14, 14], iconAnchor: [7, 7]
+                });
+                liveUserMarkers[phone] = L.marker([loc.lat, loc.lng], { icon, zIndexOffset: 500 }).addTo(map);
+            }
+        });
+    });
+}
+listenLiveLocations();
+map.on('locationfound', () => { pushMyLocation(); });
+
+window.addEventListener('beforeunload', () => {
+    const phone = localStorage.getItem('userPhone');
+    if (phone && database) database.ref('liveLocations/' + phone).remove();
+});
+
+const _origSaveProfile = window.saveProfile;
+window.saveProfile = function() {
+    const n = document.getElementById('pf-name')?.value?.trim() || '';
+    const s = document.getElementById('pf-surname')?.value?.trim() || '';
+    localStorage.setItem('userName', [n, s].filter(Boolean).join(' '));
+    if (_origSaveProfile) _origSaveProfile();
+};
+
+// ================================================================
+// SOS ACIL YARDIM SISTEMI
+// ================================================================
+let currentSOSData = null;
+let sosAlertedKeys = new Set();
+
+window.sendSOS = function() {
+    if (!database || !userLocation) {
+        alert('Konum bilginiz alinamadi. Lutfen konumunuza izin verin.');
+        return;
+    }
+    const phone = localStorage.getItem('userPhone') || 'Bilinmiyor';
+    const name = localStorage.getItem('userName') || 'Isimsiz Kullanici';
+    if (!confirm('ACiL YARDIM CAGRISI gonderilecek!\n\nYakininmdaki tum kullanicilara acil uyari iletilecek.\n\nDevam etmek istiyor musunuz?')) return;
+    database.ref('emergencies').push({
+        lat: userLocation.lat, lng: userLocation.lng,
+        phone: phone, name: name,
+        timestamp: Date.now(), active: true
+    }).then(() => {
+        alert('Acil yardim cagriniz gonderildi!\nYakininzdaki kullanicilar bilgilendirilecek.');
+    });
+};
+
+function listenEmergencies() {
+    if (!database) return;
+    database.ref('emergencies').on('child_added', snap => {
+        const data = snap.val();
+        const key = snap.key;
+        if (!data || !data.active) return;
+        const now = Date.now();
+        if (now - data.timestamp > 30 * 60 * 1000) { database.ref('emergencies/' + key).remove(); return; }
+        const myPhone = localStorage.getItem('userPhone') || '';
+        if (data.phone === myPhone) return;
+        if (sosAlertedKeys.has(key)) return;
+        if (!userLocation) return;
+        const dist = userLocation.distanceTo(L.latLng(data.lat, data.lng));
+        if (dist > 10000) return;
+        sosAlertedKeys.add(key);
+        showSOSAlert(key, data, dist);
+    });
+}
+
+function showSOSAlert(key, data, dist) {
+    currentSOSData = { key, ...data };
+    document.getElementById('sos-caller-name').textContent = data.name || 'Isimsiz';
+    document.getElementById('sos-caller-phone').textContent = data.phone || '—';
+    const distText = dist < 1000 ? Math.round(dist) + ' metre' : (dist / 1000).toFixed(1) + ' km';
+    document.getElementById('sos-caller-dist').textContent = distText + ' uzaklikta';
+    document.getElementById('sos-alert-modal').style.display = 'flex';
+    speakAlert('Dikkat! Acil yardim cagrisi! ' + (data.name || 'Bir kullanici') + ' yardim istiyor, ' + distText + ' uzaklikta.');
+    if (navigator.vibrate) navigator.vibrate([500, 200, 500, 200, 500]);
+}
+
+window.routeToSOS = function() {
+    if (!currentSOSData) return;
+    document.getElementById('sos-alert-modal').style.display = 'none';
+    const dest = L.latLng(currentSOSData.lat, currentSOSData.lng);
+    map.setView(dest, 15, { animate: true });
+    const sosMarker = L.marker(dest, {
+        icon: L.divIcon({ className: 'sos-map-marker', html: '\uD83D\uDEA8', iconSize: [40, 40], iconAnchor: [20, 40] }),
+        zIndexOffset: 2000
+    }).addTo(map).bindPopup('<div class="popup-title">\uD83D\uDEA8 Acil Yardim</div><div class="popup-note">' + sanitize(currentSOSData.name) + ' yardim istiyor</div>').openPopup();
+    setTimeout(() => { map.removeLayer(sosMarker); }, 30 * 60 * 1000);
+    if (userLocation && typeof L.Routing !== 'undefined') {
+        if (routingControl) map.removeControl(routingControl);
+        routingControl = L.Routing.control({
+            waypoints: [userLocation, dest],
+            routeWhileDragging: false, addWaypoints: false, show: false,
+            lineOptions: { styles: [{ color: '#ef4444', weight: 5, opacity: 0.8 }] },
+            createMarker: () => null
+        }).addTo(map);
+    }
+};
+
+window.dismissSOS = function() {
+    document.getElementById('sos-alert-modal').style.display = 'none';
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+};
+
+listenEmergencies();

@@ -1839,3 +1839,210 @@ body.driving-active .drv-hazard-float-btn { display: flex !important; }
         grid-template-columns: 1fr;
     }
 }
+
+/* ================================================================
+   CANLI KONUM MARKERLARI
+   ================================================================ */
+.live-user-dot {
+    width: 14px; height: 14px;
+    background: #4f8cff;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 0 10px rgba(79,140,255,0.5);
+    position: relative;
+    animation: livePulse 2s infinite;
+}
+.live-user-label {
+    position: absolute;
+    top: -20px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.75);
+    color: #fff;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+    pointer-events: none;
+}
+@keyframes livePulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(79,140,255,0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(79,140,255,0); }
+}
+
+/* ================================================================
+   PROFIL TOGGLE SWITCH
+   ================================================================ */
+.pf-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+}
+.pf-toggle-info { display: flex; align-items: center; gap: 12px; flex: 1; }
+.pf-toggle-icon { font-size: 22px; }
+.pf-toggle-title { font-size: 14px; font-weight: 600; color: var(--text-main); }
+.pf-toggle-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+.pf-switch { position: relative; width: 48px; height: 26px; flex-shrink: 0; }
+.pf-switch input { opacity: 0; width: 0; height: 0; }
+.pf-slider {
+    position: absolute; inset: 0;
+    background: #333;
+    border-radius: 26px;
+    transition: 0.3s;
+    cursor: pointer;
+}
+.pf-slider::before {
+    content: '';
+    position: absolute;
+    width: 20px; height: 20px;
+    left: 3px; bottom: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: 0.3s;
+}
+.pf-switch input:checked + .pf-slider { background: var(--accent-blue); }
+.pf-switch input:checked + .pf-slider::before { transform: translateX(22px); }
+
+/* ================================================================
+   SOS BUTONU
+   ================================================================ */
+.sos-fab-btn {
+    position: fixed;
+    bottom: 24px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 1200;
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    border: 3px solid rgba(255,255,255,0.3);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(220,38,38,0.5);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.sos-fab-btn:active { transform: translateX(-50%) scale(0.92); }
+.sos-label {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    margin-top: 1px;
+}
+.sos-pulse-ring {
+    position: absolute;
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    border: 2px solid rgba(239,68,68,0.4);
+    animation: sosPulse 2s infinite;
+}
+.sos-pulse-ring.delay-1 { animation-delay: 1s; }
+@keyframes sosPulse {
+    0% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(2); opacity: 0; }
+}
+
+/* ================================================================
+   SOS UYARI POPUP
+   ================================================================ */
+.sos-alert-overlay {
+    position: fixed; inset: 0;
+    z-index: 9998;
+    background: rgba(139,0,0,0.6);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: sosFlash 1s ease-in-out 3;
+}
+@keyframes sosFlash {
+    0%, 100% { background: rgba(139,0,0,0.6); }
+    50% { background: rgba(220,38,38,0.8); }
+}
+.sos-alert-card {
+    background: var(--glass-bg);
+    border: 2px solid #ef4444;
+    border-radius: 20px;
+    max-width: 380px;
+    width: 90%;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 0 60px rgba(239,68,68,0.4);
+}
+.sos-alert-pulse-bg {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(220,38,38,0.1), transparent);
+    pointer-events: none;
+}
+.sos-alert-header {
+    padding: 24px;
+    text-align: center;
+    border-bottom: 1px solid rgba(239,68,68,0.3);
+    position: relative;
+}
+.sos-alert-icon-wrap {
+    width: 60px; height: 60px;
+    margin: 0 auto 12px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: sosIconPulse 1s infinite alternate;
+}
+@keyframes sosIconPulse {
+    from { transform: scale(1); box-shadow: 0 0 20px rgba(239,68,68,0.3); }
+    to { transform: scale(1.1); box-shadow: 0 0 40px rgba(239,68,68,0.6); }
+}
+.sos-alert-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: #ef4444;
+    margin: 0;
+    letter-spacing: 0.5px;
+}
+.sos-alert-body { padding: 20px 24px; position: relative; }
+.sos-alert-info {
+    background: rgba(255,255,255,0.03);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 16px;
+}
+.sos-info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--glass-border);
+}
+.sos-info-row:last-child { border-bottom: none; }
+.sos-info-label { font-size: 13px; color: var(--text-muted); }
+.sos-info-value { font-size: 13px; font-weight: 600; color: var(--text-main); }
+.sos-route-btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.sos-route-btn:active { transform: scale(0.97); }
+
+/* SOS harita markeri */
+.sos-map-marker {
+    font-size: 32px;
+    animation: sosMarkerBounce 1s infinite alternate;
+}
+@keyframes sosMarkerBounce {
+    from { transform: translateY(0); }
+    to { transform: translateY(-8px); }
+}

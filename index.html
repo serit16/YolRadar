@@ -30,7 +30,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
-    <link rel="stylesheet" href="style.css?v=17">
+    <link rel="stylesheet" href="style.css?v=18">
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 </head>
@@ -496,6 +496,51 @@
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
     </button>
 
+    <!-- =================== SOS ACİL YARDIM BUTONU =================== -->
+    <button id="btn-sos" class="sos-fab-btn" title="Acil Yardım" onclick="sendSOS()">
+        <div class="sos-pulse-ring"></div>
+        <div class="sos-pulse-ring delay-1"></div>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <span class="sos-label">SOS</span>
+    </button>
+
+    <!-- =================== ACİL YARDIM POPUP MODALI =================== -->
+    <div id="sos-alert-modal" class="sos-alert-overlay" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+        <div class="sos-alert-card">
+            <div class="sos-alert-pulse-bg"></div>
+            <div class="sos-alert-header">
+                <div class="sos-alert-icon-wrap">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </div>
+                <h2 class="sos-alert-title">🚨 ACİL YARDIM ÇAĞRISI</h2>
+            </div>
+            <div class="sos-alert-body">
+                <div class="sos-alert-info">
+                    <div class="sos-info-row">
+                        <span class="sos-info-label">👤 İsim</span>
+                        <span class="sos-info-value" id="sos-caller-name">—</span>
+                    </div>
+                    <div class="sos-info-row">
+                        <span class="sos-info-label">📱 Numara</span>
+                        <span class="sos-info-value" id="sos-caller-phone">—</span>
+                    </div>
+                    <div class="sos-info-row">
+                        <span class="sos-info-label">📍 Mesafe</span>
+                        <span class="sos-info-value" id="sos-caller-dist">—</span>
+                    </div>
+                </div>
+                <button class="sos-route-btn" id="sos-route-btn" onclick="routeToSOS()">
+                    🗺️ Yardıma Git
+                </button>
+                <button class="btn btn-secondary w-100" style="margin-top:8px;" onclick="dismissSOS()">Kapat</button>
+            </div>
+        </div>
+    </div>
+
 
     <button id="btn-user-logout" class="fab-btn right-side" style="bottom: 200px;" title="Çıkış Yap" onclick="localStorage.clear();location.reload();">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -749,6 +794,21 @@
                     <label class="pf-label">Kısa Bio</label>
                     <textarea id="pf-bio" class="pf-input pf-textarea" placeholder="Kendinizden bahsedin…" maxlength="120"></textarea>
 
+                    <!-- Konum Paylaşım Toggle -->
+                    <div class="pf-toggle-row" style="margin:16px 0;">
+                        <div class="pf-toggle-info">
+                            <span class="pf-toggle-icon">📍</span>
+                            <div>
+                                <div class="pf-toggle-title">Konumumu Paylaş</div>
+                                <div class="pf-toggle-desc">Açıkken diğer kullanıcıları görebilir ve onlar da seni görebilir</div>
+                            </div>
+                        </div>
+                        <label class="pf-switch">
+                            <input type="checkbox" id="pf-share-location" onchange="toggleLocationSharing(this.checked)">
+                            <span class="pf-slider"></span>
+                        </label>
+                    </div>
+
                     <button class="btn btn-primary w-100 pf-save-btn" id="pf-save-btn" onclick="saveProfile()">
                         💾 Kaydet
                     </button>
@@ -879,6 +939,6 @@
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
     <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="app.js?v=19"></script>
+    <script src="app.js?v=20"></script>
 </body>
 </html>
