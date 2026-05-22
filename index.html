@@ -88,7 +88,7 @@
                 });
             }
 
-            var _ah = '158f5b26d5e1d0de7270825ff11b5460045daa11323747fac14e2cf6bef6c266';
+            var _ah = 'fa84a88741ebb61637cb9b315d9edea5e7e9eb5e6f1c2a4f74d36a61c8b86cc1';
             crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw)).then(function(buf) {
                 var hash = Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
                 if (hash === _ah) {
@@ -153,6 +153,8 @@
                     if (typeof map !== 'undefined') {
                         try { map.invalidateSize(); } catch(e) {}
                     }
+                    // Premium kontrolü başlat
+                    if (typeof checkPremiumStatus === 'function') checkPremiumStatus();
                 }, 320);
             });
         }
@@ -497,7 +499,7 @@
     </button>
 
     <!-- =================== SOS ACİL YARDIM BUTONU =================== -->
-    <button id="btn-sos" class="sos-fab-btn" title="Acil Yardım" onclick="sendSOS()">
+    <button id="btn-sos" class="sos-fab-btn" title="Acil Yardım — Premium" onclick="sendSOS()">
         <div class="sos-pulse-ring"></div>
         <div class="sos-pulse-ring delay-1"></div>
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -506,6 +508,7 @@
             <line x1="12" y1="17" x2="12.01" y2="17"/>
         </svg>
         <span class="sos-label">SOS</span>
+        <span class="sos-lock-icon">🔒</span>
     </button>
 
     <!-- =================== ACİL YARDIM POPUP MODALI =================== -->
@@ -541,11 +544,46 @@
         </div>
     </div>
 
+    <!-- =================== PREMIUM ÜYELİK MODALI =================== -->
+    <div id="premium-modal" class="premium-modal-overlay" style="display:none;" onclick="if(event.target===this)closePremiumModal()">
+        <div class="premium-modal-card">
+            <div class="premium-modal-glow"></div>
+            <button class="premium-modal-close" onclick="closePremiumModal()">✕</button>
+            <div class="premium-modal-crown">
+                <div class="premium-crown-ring"></div>
+                <div class="premium-crown-ring delay-1"></div>
+                <span class="premium-crown-icon">👑</span>
+            </div>
+            <h2 class="premium-modal-title">Premium Özellik</h2>
+            <p class="premium-modal-desc">Bu özellik <strong>Premium üyelere</strong> özeldir.</p>
+            <div class="premium-features-list">
+                <div class="premium-feature-item">
+                    <span class="premium-feature-icon">🆘</span>
+                    <div>
+                        <div class="premium-feature-name">Acil Yardım (SOS)</div>
+                        <div class="premium-feature-detail">Tek tuşla yakındaki tüm kullanıcılara acil çağrı gönder</div>
+                    </div>
+                </div>
+                <div class="premium-feature-item">
+                    <span class="premium-feature-icon">📍</span>
+                    <div>
+                        <div class="premium-feature-name">Canlı Konum Paylaşımı</div>
+                        <div class="premium-feature-detail">Diğer kullanıcıları haritada canlı olarak gör</div>
+                    </div>
+                </div>
+            </div>
+            <div class="premium-modal-footer">
+                <p class="premium-contact-text">Premium üyelik için admin ile iletişime geçin</p>
+                <button class="btn btn-secondary w-100" onclick="closePremiumModal()" style="margin-top:8px;">Anladım</button>
+            </div>
+        </div>
+    </div>
+
 
     <button id="btn-user-logout" class="fab-btn right-side" style="bottom: 200px;" title="Çıkış Yap" onclick="localStorage.clear();location.reload();">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
     </button>
-    <button id="btn-locate" class="fab-btn right-side" style="bottom: 136px;" title="Konumuma Git" onclick="if(window.map){if(window.userLocation){window.map.setView(window.userLocation,16,{animate:true});}else{window.map.locate({setView:true,maxZoom:16});}}else if(navigator.geolocation){navigator.geolocation.getCurrentPosition(function(p){if(window.map)window.map.setView([p.coords.latitude,p.coords.longitude],16,{animate:true});});}" >
+    <button id="btn-locate" class="fab-btn right-side" style="bottom: 136px;" title="Konumuma Git">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4"/><path d="M12 18v4"/><path d="M2 12h4"/><path d="M18 12h4"/></svg>
     </button>
     <button id="btn-theme" class="fab-btn right-side" style="bottom: 72px;" title="Tema Değiştir">☀️</button>
@@ -699,6 +737,10 @@
                                 <div class="guide-btn-icon left-col">❓</div>
                                 <span>Bu kılavuzu aç</span>
                             </div>
+                            <div class="guide-btn-item">
+                                <div class="guide-btn-icon" style="background:rgba(220,38,38,0.15);">🆘</div>
+                                <span>Acil yardım çağrısı <span class="premium-tag">👑</span></span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -730,6 +772,52 @@
                     </div>
                 </div>
 
+                <!-- Premium Üyelik -->
+                <div class="guide-section highlight" style="border-color:rgba(255,199,0,0.25); background:rgba(255,199,0,0.04);">
+                    <div class="guide-section-icon">👑</div>
+                    <div class="guide-section-body">
+                        <h3>Premium Üyelik</h3>
+                        <p>Premium üyeler aşağıdaki özel özelliklere erişebilir:</p>
+                        <ul class="guide-list">
+                            <li><span class="guide-badge" style="background:#dc2626;">🆘</span> <strong>Acil Yardım (SOS)</strong> — Tek tuşla yakındaki tüm kullanıcılara acil çağrı gönderebilme</li>
+                            <li><span class="guide-badge" style="background:#4f8cff;">📍</span> <strong>Canlı Konum Paylaşımı</strong> — Diğer kullanıcıları haritada anlık olarak görebilme</li>
+                        </ul>
+                        <p>Premium üyelik almak için uygulama yöneticileri ile iletişime geçebilirsiniz. Premium özellikler, haritadaki <strong>SOS butonunda</strong> ve profildeki <strong>konum paylaşımı</strong> ayarında 👑 simgesiyle işaretlidir.</p>
+                    </div>
+                </div>
+
+                <!-- SOS Acil Yardım -->
+                <div class="guide-section">
+                    <div class="guide-section-icon">🆘</div>
+                    <div class="guide-section-body">
+                        <h3>Acil Yardım Butonu (SOS) <span class="premium-tag">👑 PREMIUM</span></h3>
+                        <p>Haritanın altındaki kırmızı <strong>SOS butonuna</strong> basarak acil yardım çağrısı gönderebilirsiniz. Çağrı gönderildiğinde:</p>
+                        <ul class="guide-list">
+                            <li>Yakınızndaki tüm kullanıcılara <strong>anlık bildirim</strong> ulaşır</li>
+                            <li>Konumunuz, isminiz ve telefon numaranız paylaşılır</li>
+                            <li>Diğer kullanıcılar <strong>"Yardıma Git"</strong> butonuyla size rota oluşturabilir</li>
+                            <li>Çağrı <strong>30 dakika</strong> boyunca aktif kalır</li>
+                        </ul>
+                        <p>⚠️ Bu özelliği sadece <strong>gerçek acil durumlarda</strong> kullanın.</p>
+                    </div>
+                </div>
+
+                <!-- Canlı Konum Paylaşımı -->
+                <div class="guide-section">
+                    <div class="guide-section-icon">📍</div>
+                    <div class="guide-section-body">
+                        <h3>Canlı Konum Paylaşımı <span class="premium-tag">👑 PREMIUM</span></h3>
+                        <p>Profilinizden <strong>"Konumumu Paylaş"</strong> seçeneğini açarak diğer kullanıcıları haritada canlı olarak görebilirsiniz.</p>
+                        <ul class="guide-list">
+                            <li>Konum paylaşımı açıkken <strong>mavi noktalar</strong> olarak diğer kullanıcılar haritanızda görünür</li>
+                            <li>Üzerlerine tıklayarak kullanıcı adını görebilirsiniz</li>
+                            <li>Konumunuz her <strong>15 saniyede</strong> bir güncellenir</li>
+                            <li>Kapatıldığında konumunuz anında silinir ve kimse sizi göremez</li>
+                        </ul>
+                        <p>Gizliliğinize saygı duyuyoruz — bu özellik tamamen <strong>isteğe bağlıdır</strong> ve istediğiniz zaman kapatabilirsiniz.</p>
+                    </div>
+                </div>
+
                 <!-- İpuçları -->
                 <div class="guide-section highlight">
                     <div class="guide-section-icon">💡</div>
@@ -740,6 +828,7 @@
                             <li>Aynı bölgeye kısa süre içinde tekrar bildirim yapamazsınız (spam koruması)</li>
                             <li>Uygulamayı ana ekranınıza ekleyerek daha hızlı açabilirsiniz</li>
                             <li>Koyu tema gece sürüşlerinde göz yorgunluğunu azaltır</li>
+                            <li>Premium özellikler için SOS butonundaki 🔒 simgesine tıklayarak detayları görebilirsiniz</li>
                         </ul>
                     </div>
                 </div>
@@ -766,7 +855,7 @@
             <div class="profile-top-bar">
                 <div class="profile-avatar" id="profile-avatar-display">👤</div>
                 <div class="profile-header-info">
-                    <div id="profile-display-name" class="profile-name-big">Yükleniyor…</div>
+                <div id="profile-display-name" class="profile-name-big">Yükleniyor…<span id="premium-profile-badge" class="premium-profile-badge" style="display:none;">👑 Premium</span></div>
                     <div id="profile-display-phone" class="profile-phone-sub"></div>
                 </div>
                 <button class="profile-close-btn" onclick="closeProfileModal()">✕</button>
@@ -799,7 +888,7 @@
                         <div class="pf-toggle-info">
                             <span class="pf-toggle-icon">📍</span>
                             <div>
-                                <div class="pf-toggle-title">Konumumu Paylaş</div>
+                                <div class="pf-toggle-title">Konumumu Paylaş <span class="premium-tag">👑 PREMIUM</span></div>
                                 <div class="pf-toggle-desc">Açıkken diğer kullanıcıları görebilir ve onlar da seni görebilir</div>
                             </div>
                         </div>

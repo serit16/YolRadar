@@ -156,6 +156,7 @@ let dangerCircles  = [];
 let reportCircles  = {};      
 let initialLocationSet = false;
 let voiceEnabled = localStorage.getItem('voiceEnabled') !== 'false';
+let isPremiumUser = false; // Premium üyelik durumu
 if ('speechSynthesis' in window) { window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); }; } 
 
 // GPS izleme sadece aşağıda (KONUM TAKİBİ bölümünde) başlatılıyor
@@ -196,12 +197,23 @@ document.addEventListener('DOMContentLoaded', () => {
         applyTheme(cur === 'dark' ? 'light' : 'dark');
     });
 
-    // ---- Konuma git ----
+    // ---- Konuma git (tek seferlik) ----
     document.getElementById('btn-locate').addEventListener('click', () => {
         if (userLocation) {
             map.setView(userLocation, 16, { animate: true });
         } else {
-            map.locate({ setView: true, maxZoom: 16 });
+            // watch zaten aktif, kullanıcıya bilgi ver
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        const ll = L.latLng(pos.coords.latitude, pos.coords.longitude);
+                        userLocation = ll;
+                        map.setView(ll, 16, { animate: true });
+                    },
+                    () => { alert('Konum alınamadı. Lütfen konum iznini kontrol edin.'); },
+                    { enableHighAccuracy: true, timeout: 8000 }
+                );
+            }
         }
     });
 
@@ -464,6 +476,7 @@ function renderUsersTab() {
             userMap[p].firstLogin = ud.firstLogin || null;
             userMap[p].lastLogin  = ud.lastLogin  || null;
             userMap[p].loginCount = ud.loginCount || 0;
+            userMap[p].premium    = ud.premium    || false;
             // Profil bilgileri
             userMap[p].name    = ud.name    || '';
             userMap[p].surname = ud.surname || '';
@@ -529,6 +542,7 @@ function renderUsersTableRows(userMap, banned, filterQ = '') {
 
     sorted.forEach(([phone, u]) => {
         const isBanned = banned.includes(phone);
+        const isPrem = u.premium === true;
         const total = (u.radar || 0) + (u.kaza || 0) + (u.polis || 0);
         const fullName = [u.name, u.surname].filter(Boolean).join(' ') || '<span style="color:var(--text-muted);font-style:italic;">—</span>';
         const city = u.city || '<span style="color:var(--text-muted)">—</span>';
@@ -538,7 +552,7 @@ function renderUsersTableRows(userMap, banned, filterQ = '') {
         if (q && phone.includes(q)) tr.style.background = 'rgba(79,140,255,0.07)';
 
         tr.innerHTML = `
-            <td style="font-family:monospace;font-weight:600;">${phone}</td>
+            <td style="font-family:monospace;font-weight:600;">${phone}${isPrem ? ' <span class="premium-badge-mini">👑</span>' : ''}</td>
             <td style="font-weight:600;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(u.name||'')+' '+(u.surname||'')}">${fullName}</td>
             <td style="font-size:13px;color:var(--text-muted);">${city}</td>
             <td style="text-align:center;font-weight:700;">${total}</td>
@@ -552,6 +566,7 @@ function renderUsersTableRows(userMap, banned, filterQ = '') {
             <td><span class="badge ${isBanned ? 'badge-banned' : 'badge-active'}">${isBanned ? '🚫 Banlı' : '✅ Aktif'}</span></td>
             <td>
                 ${!isBanned ? `<button class="admin-btn btn-warning" onclick="adminBanUser('${phone}','')">🚫 Banla</button>` : ''}
+                <button class="admin-btn ${isPrem ? 'btn-secondary' : 'btn-premium'}" onclick="togglePremium('${phone}', ${!isPrem})">${isPrem ? '👑 Premium Kaldır' : '⭐ Premium Yap'}</button>
                 <button class="admin-btn btn-danger" onclick="removeFromWhitelist('${phone}')">🗑️ Çıkar</button>
             </td>`;
         tbody.appendChild(tr);
@@ -2331,7 +2346,7 @@ function renderHotspotsTab() {
 
 
 // ================================================================
-// CANLI KONUM PAYLASIMI
+// CANLI KONUM PAYLASIMI (PREMIUM)
 // ================================================================
 let locationSharingEnabled = localStorage.getItem('shareLocation') === 'true';
 let liveUserMarkers = {};
@@ -2343,6 +2358,13 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 window.toggleLocationSharing = function(enabled) {
+    if (enabled && !isPremiumUser) {
+        // Premium değilse toggle'ı geri kapat ve modal göster
+        const cb = document.getElementById('pf-share-location');
+        if (cb) cb.checked = false;
+        showPremiumModal();
+        return;
+    }
     locationSharingEnabled = enabled;
     localStorage.setItem('shareLocation', enabled ? 'true' : 'false');
     if (!enabled) {
@@ -2416,12 +2438,17 @@ window.saveProfile = function() {
 };
 
 // ================================================================
-// SOS ACIL YARDIM SISTEMI
+// SOS ACIL YARDIM SISTEMI (PREMIUM)
 // ================================================================
 let currentSOSData = null;
 let sosAlertedKeys = new Set();
 
 window.sendSOS = function() {
+    // Premium kontrolü
+    if (!isPremiumUser) {
+        showPremiumModal();
+        return;
+    }
     if (!database || !userLocation) {
         alert('Konum bilginiz alinamadi. Lutfen konumunuza izin verin.');
         return;
@@ -2495,3 +2522,92 @@ window.dismissSOS = function() {
 };
 
 listenEmergencies();
+
+// ================================================================
+// PREMIUM ÜYELİK SİSTEMİ
+// ================================================================
+
+/**
+ * Firebase'den kullanıcının premium durumunu kontrol et
+ * ve UI'yi buna göre güncelle
+ */
+window.checkPremiumStatus = function() {
+    const phone = localStorage.getItem('userPhone');
+    if (!phone || !database) return;
+    
+    database.ref('users/' + phone + '/premium').on('value', snap => {
+        isPremiumUser = snap.val() === true;
+        console.log('[Premium] Durum güncellendi:', isPremiumUser, 'Telefon:', phone);
+        updatePremiumUI();
+    });
+};
+
+/**
+ * Premium durumuna göre UI elementlerini güncelle
+ */
+function updatePremiumUI() {
+    const sosBtn = document.getElementById('btn-sos');
+    const shareToggle = document.getElementById('pf-share-location');
+    const premiumBadge = document.getElementById('premium-profile-badge');
+    
+    if (sosBtn) {
+        sosBtn.classList.toggle('premium-locked', !isPremiumUser);
+    }
+    
+    // Konum paylaşım toggle'ını güncelle
+    if (shareToggle && !isPremiumUser) {
+        shareToggle.checked = false;
+        locationSharingEnabled = false;
+        localStorage.setItem('shareLocation', 'false');
+    }
+    
+    // Profildeki premium badge
+    if (premiumBadge) {
+        premiumBadge.style.display = isPremiumUser ? 'inline-flex' : 'none';
+    }
+    
+    // Konum toggle'ındaki kilitli durumu
+    const toggleRow = document.querySelector('.pf-toggle-row');
+    if (toggleRow) {
+        toggleRow.classList.toggle('premium-feature-locked', !isPremiumUser);
+    }
+}
+
+/**
+ * Premium yükseltme modalını göster
+ */
+function showPremiumModal() {
+    const modal = document.getElementById('premium-modal');
+    if (modal) modal.style.display = 'flex';
+}
+
+window.closePremiumModal = function() {
+    const modal = document.getElementById('premium-modal');
+    if (modal) modal.style.display = 'none';
+};
+
+/**
+ * Admin: Kullanıcının premium durumunu değiştir
+ */
+window.togglePremium = function(phone, makePremium) {
+    if (!database) return;
+    const msg = makePremium 
+        ? `${phone} numarasını PREMIUM yapmak istiyor musunuz?`
+        : `${phone} numarasının Premium üyeliğini KALDIRMAK istiyor musunuz?`;
+    if (!confirm(msg)) return;
+    
+    database.ref('users/' + phone + '/premium').set(makePremium).then(() => {
+        alert(makePremium ? `👑 ${phone} artık Premium üye!` : `${phone} Premium üyelikten çıkarıldı.`);
+        if (typeof renderUsersTab === 'function') renderUsersTab();
+    }).catch(e => alert('Hata: ' + e.message));
+};
+
+// Sayfa yüklendiğinde ve hemen şimdi premium kontrolü yap
+if (localStorage.getItem('isLoggedIn') === 'true' && localStorage.getItem('userPhone')) {
+    checkPremiumStatus();
+}
+document.addEventListener('DOMContentLoaded', () => {
+    if (localStorage.getItem('isLoggedIn') === 'true' && localStorage.getItem('userPhone')) {
+        checkPremiumStatus();
+    }
+});

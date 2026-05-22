@@ -2046,3 +2046,301 @@ body.driving-active .drv-hazard-float-btn { display: flex !important; }
     from { transform: translateY(0); }
     to { transform: translateY(-8px); }
 }
+
+/* ================================================================
+   PREMIUM ÜYELİK SİSTEMİ
+   ================================================================ */
+
+/* --- Premium Upgrade Modal --- */
+.premium-modal-overlay {
+    position: fixed; inset: 0;
+    z-index: 9999;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: premFadeIn 0.3s ease;
+}
+@keyframes premFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.premium-modal-card {
+    position: relative;
+    background: var(--glass-bg);
+    border: 1px solid rgba(255,199,0,0.25);
+    border-radius: 24px;
+    max-width: 380px;
+    width: 90%;
+    padding: 0;
+    overflow: hidden;
+    box-shadow: 0 0 80px rgba(255,199,0,0.12), 0 20px 60px rgba(0,0,0,0.5);
+    animation: premSlideUp 0.4s cubic-bezier(0.16,1,0.3,1);
+}
+@keyframes premSlideUp {
+    from { transform: translateY(30px) scale(0.95); opacity: 0; }
+    to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.premium-modal-glow {
+    position: absolute;
+    top: -60px; left: 50%;
+    transform: translateX(-50%);
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(255,199,0,0.15) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.premium-modal-close {
+    position: absolute;
+    top: 14px; right: 14px;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--glass-border);
+    background: rgba(255,255,255,0.05);
+    color: var(--text-muted);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    z-index: 2;
+}
+.premium-modal-close:hover {
+    background: rgba(255,255,255,0.1);
+    color: var(--text-main);
+}
+
+.premium-modal-crown {
+    position: relative;
+    width: 80px; height: 80px;
+    margin: 32px auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.premium-crown-icon {
+    font-size: 42px;
+    z-index: 2;
+    position: relative;
+    animation: crownFloat 3s ease-in-out infinite;
+}
+@keyframes crownFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+}
+
+.premium-crown-ring {
+    position: absolute;
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    border: 2px solid rgba(255,199,0,0.25);
+    animation: crownPulse 2s infinite;
+}
+.premium-crown-ring.delay-1 { animation-delay: 1s; }
+@keyframes crownPulse {
+    0% { transform: scale(1); opacity: 0.6; }
+    100% { transform: scale(1.8); opacity: 0; }
+}
+
+.premium-modal-title {
+    text-align: center;
+    font-size: 22px;
+    font-weight: 800;
+    color: #ffc700;
+    margin: 0 0 6px;
+    letter-spacing: 0.3px;
+}
+
+.premium-modal-desc {
+    text-align: center;
+    font-size: 14px;
+    color: var(--text-muted);
+    margin: 0 0 20px;
+    padding: 0 24px;
+}
+.premium-modal-desc strong {
+    color: #ffc700;
+}
+
+.premium-features-list {
+    padding: 0 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.premium-feature-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: rgba(255,199,0,0.05);
+    border: 1px solid rgba(255,199,0,0.12);
+    border-radius: 14px;
+    transition: background 0.2s;
+}
+.premium-feature-item:hover {
+    background: rgba(255,199,0,0.08);
+}
+
+.premium-feature-icon {
+    font-size: 26px;
+    flex-shrink: 0;
+    width: 44px; height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,199,0,0.1);
+    border-radius: 12px;
+}
+
+.premium-feature-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 2px;
+}
+.premium-feature-detail {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.premium-modal-footer {
+    padding: 16px 24px 24px;
+    border-top: 1px solid var(--glass-border);
+}
+
+.premium-contact-text {
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0 0 4px;
+    font-style: italic;
+}
+
+/* --- SOS Buton Kilit Durumu --- */
+.sos-fab-btn .sos-lock-icon {
+    display: none;
+    position: absolute;
+    top: -4px; right: -4px;
+    font-size: 14px;
+    background: rgba(0,0,0,0.7);
+    border-radius: 50%;
+    width: 22px; height: 22px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+.sos-fab-btn.premium-locked .sos-lock-icon {
+    display: flex;
+}
+.sos-fab-btn.premium-locked {
+    opacity: 0.65;
+    background: linear-gradient(135deg, #555, #777);
+    box-shadow: 0 4px 20px rgba(100,100,100,0.3);
+}
+.sos-fab-btn.premium-locked .sos-pulse-ring {
+    display: none;
+}
+
+/* --- Premium Profil Badge --- */
+.premium-profile-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #ffc700;
+    background: rgba(255,199,0,0.12);
+    border: 1px solid rgba(255,199,0,0.25);
+    border-radius: 20px;
+    padding: 3px 10px;
+    margin-left: 8px;
+    vertical-align: middle;
+    letter-spacing: 0.3px;
+}
+
+/* --- Premium Tag (küçük etiket) --- */
+.premium-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 9px;
+    font-weight: 800;
+    color: #ffc700;
+    background: rgba(255,199,0,0.12);
+    border: 1px solid rgba(255,199,0,0.2);
+    border-radius: 6px;
+    padding: 2px 6px;
+    margin-left: 6px;
+    vertical-align: middle;
+    letter-spacing: 0.5px;
+}
+
+/* --- Admin Premium Buton --- */
+.admin-btn.btn-premium {
+    background: linear-gradient(135deg, rgba(255,199,0,0.15), rgba(255,159,0,0.15));
+    border: 1px solid rgba(255,199,0,0.3);
+    color: #ffc700;
+    font-weight: 600;
+}
+.admin-btn.btn-premium:hover {
+    background: linear-gradient(135deg, rgba(255,199,0,0.25), rgba(255,159,0,0.25));
+}
+
+.admin-btn.btn-secondary {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--glass-border);
+    color: var(--text-muted);
+}
+.admin-btn.btn-secondary:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+/* --- Premium Badge Mini (admin tablo) --- */
+.premium-badge-mini {
+    font-size: 12px;
+    margin-left: 2px;
+    vertical-align: middle;
+}
+
+/* --- Konum Toggle Kilitli Durum --- */
+.pf-toggle-row.premium-feature-locked {
+    opacity: 0.6;
+    position: relative;
+}
+.pf-toggle-row.premium-feature-locked::after {
+    content: '🔒 Premium gerekli';
+    position: absolute;
+    bottom: -6px;
+    right: 16px;
+    font-size: 10px;
+    color: #ffc700;
+    background: rgba(255,199,0,0.1);
+    border: 1px solid rgba(255,199,0,0.2);
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-weight: 600;
+}
+
+/* Mobil uyum */
+@media (max-width: 480px) {
+    .premium-modal-card {
+        width: 95%;
+        border-radius: 18px;
+    }
+    .premium-crown-icon {
+        font-size: 36px;
+    }
+    .premium-modal-title {
+        font-size: 20px;
+    }
+}
